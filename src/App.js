@@ -1,59 +1,79 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import axios from 'axios';
-import Card from './components/Card';
 import Header from './components/Header';
 import Drawer from './components/Drawer';
 
+import Home from './pages/Home';
+import Favorites from './pages/Favorites';
+
 function App() {
-  // var [count, setCount] = React.useState(5);
-
-  // const plus = () => {
-  //   setCount(++count);
-  // };
-
-  // const minus = () => {
-  //   setCount(--count);
-  // };
 
   const [items, setItems] = React.useState([]);
-  const [cartItems, setCartItems] = React.useState([]); // Корзина. 
+  const [cartItems, setCartItems] = React.useState([]); // Корзина.
   const [favorites, setFavorites] = React.useState([]);
   const [searchValue, setSearchValue] = React.useState(''); // Поиск
   const [cartOpened, setCartOpened] = React.useState(false); // Корзина закрыта.
-  
+  const [isLoading, setIsLoading] = React.useState(true); // Проверка на готовность
+
   React.useEffect(() => {
-    // fetch('https://67674af3560fbd14f18d663d.mockapi.io/Items').then(responsive => {
-    //   return responsive.json(); // Возвращение в json формате. 
-    // }).then(json => {
-    //   setItems(json); // Установили items и рендер. 
-    // }); // Получили массив, вытащили данные.
 
-    axios.get('https://67674af3560fbd14f18d663d.mockapi.io/Items').then(res => {
-      setItems(res.data); // Получили все кроссовки с сервера.
-    });
+    async function fetchData() {
+      const itemsResponce = await axios.get('https://67674af3560fbd14f18d663d.mockapi.io/Items');
+  
+      const cartResponce = await axios.get('https://67674af3560fbd14f18d663d.mockapi.io/cart');
+  
+      const favoriteResponce = await axios.get('https://676ac528863eaa5ac0df93ea.mockapi.io/favorites');
 
-    axios.get('https://67674af3560fbd14f18d663d.mockapi.io/cart').then(res => {
-      setCartItems(res.data); // Отправка запроса на получение корзины.
-    }); 
+      setIsLoading(false); // Загрузка всего
 
-  }, []); 
+      setCartItems(cartResponce.data); 
+      setFavorites(favoriteResponce.data);
+      setItems(itemsResponce.data); 
+    }
+
+    fetchData();
+  }, []);
 
   const onAddToCart = (obj) => {
-    axios.post('https://67674af3560fbd14f18d663d.mockapi.io/cart', obj);// Отправка на MockAPI кроссовок, которые добавили в корзину.
-    setCartItems(prev => [...prev, obj]); // Пользователю сразу выбиваем результат.
+    // Проверка наличия в корзине.
+    if (cartItems.find((cartObj) => Number(cartObj.id) === Number(obj.id))) {
+      // Если есть, увеличиваем количество.
+      axios.delete(`https://67674af3560fbd14f18d663d.mockapi.io/cart/${obj.id}`)
+      setCartItems((prev) => prev.filter((cartObj) => Number(cartObj.id) !== Number(obj.id)));
+    } else {
+      // Если нет, добавляем в корзину.
+      axios.post('https://67674af3560fbd14f18d663d.mockapi.io/cart', obj);
+      setCartItems((prev) => [...prev, obj]);
+    }
   };
 
   // Удаление с корзины элементов.
-  const onRemoveItem = (id) => { 
-    axios.delete(`https://67674af3560fbd14f18d663d.mockapi.io/cart/${id}`) // Отправка запроса на сервер для удаления элемента.
-    setCartItems(prev => prev.filter(item => item.id !== id)); 
+  const onRemoveItem = (id) => {
+    axios.delete(`https://67674af3560fbd14f18d663d.mockapi.io/cart/${id}`); // Отправка запроса на сервер для удаления элемента.
+    setCartItems((prev) => prev.filter((item) => item.id !== id));
   };
 
-  // const onAddFavorite = (obj) => {
-  //   axios.post('https://67674af3560fbd14f18d663d.mockapi.io/cart', obj);// Отправка на MockAPI кроссовок, которые добавили в корзину.
-  //   setCartItems(prev => [...prev, obj]); // Пользователю сразу выбиваем результат.
-  // }; Мок даёт только 3 ресурса, облом =)
+  const onAddFavorite = async (obj) => {
+    try {
+      if (favorites.find((favObj) => favObj.id === obj.id)) {
+        // Удаляем из избранного
+        await axios.delete(`https://676ac528863eaa5ac0df93ea.mockapi.io/favorites/${obj.id}`);
+        setFavorites((prev) => prev.filter((item) => item.id !== obj.id));
+      } else {
+        // Добавляем в избранное
+        const { data } = await axios.post('https://676ac528863eaa5ac0df93ea.mockapi.io/favorites', {
+          title: obj.title,
+          price: obj.price,
+          imageUrl: obj.imageUrl,
+        });
+        setFavorites((prev) => [...prev, data]);
+      }
+    } catch (error) {
+      alert('Не удалось добавить в избранное');
+      console.error(error);
+    }
+  };
 
   const onChangeSearchInput = (event) => {
     setSearchValue(event.target.value);
@@ -61,46 +81,36 @@ function App() {
 
   return (
     <div className="wrapper clear">
-      {/* <center>
-        <h1>{count}</h1>
-        <button onClick={plus}>+</button>
-        <button onClick={minus}>-</button>
-      </center> */}
-
       {/* Отображение корзины */}
       {/* Если открыта выполняем действие, и наоборот */}
-      {cartOpened && <Drawer items={cartItems} onClose={() => setCartOpened(false)} onRemove={onRemoveItem} />} 
-      <Header onClickCart={ () => setCartOpened(true)} /> 
+      {cartOpened && (
+        <Drawer items={cartItems} onClose={() => setCartOpened(false)} onRemove={onRemoveItem} />
+      )}
+
+      <Header onClickCart={() => setCartOpened(true)} />
 
       <Routes>
-        <Route 
-        path="/test"
-        element ={<div>Test info</div>}
+        <Route
+          path="/"
+          element={
+            <Home
+              items={items}
+              cartItems={cartItems}
+              searchValue={searchValue}
+              setSearchValue={setSearchValue}
+              onChangeSearchInput={onChangeSearchInput}
+              onAddFavorite={onAddFavorite}
+              onAddToCart={onAddToCart}
+              isLoading={isLoading}
+            />
+          }
+        />
+
+        <Route
+          path="/favorites"
+          element={<Favorites items={favorites} onAddFavorite={onAddFavorite} />}
         />
       </Routes>
-      <div className="content p-40">
-        <div className="d-flex align-center justify-between mb-40">
-          <h1>{searchValue ? `Поиск по запросу: "${searchValue}"` : "Все кроссовки"}</h1>
-          <div className="search-block d-flex">
-            <img src="/img/search.svg" alt="Search" />
-            <input onChange={onChangeSearchInput} value={searchValue} placeholder="Поиск..."></input>
-          </div>
-        </div>
-
-        <div className="d-flex flex-wrap">
-          {
-            Array.isArray(items) && items.filter((item) => item.title.toLowerCase().includes(searchValue.toLowerCase())).map((item) => (
-              <Card
-                key={item.title}
-                title={item.title} 
-                price={item.price}
-                imageUrl= {item.imageUrl}
-                onFavorite={() => console.log('Добавили в закладки')}
-                onPlus ={(obj) => onAddToCart(obj)} 
-            />
-          ))};
-        </div>
-      </div>
     </div>
   ); // Default HTML + JS
 }
