@@ -1,6 +1,7 @@
 import React from 'react';
 import styles from './Card.module.scss';
 import ContentLoader from 'react-content-loader';
+import { AppContext } from '../../App';
 
 function Card({
   id,
@@ -10,15 +11,13 @@ function Card({
   price,
   onPlus,
   favorited = false,
-  added = false,
   loading = false,
 }) {
-  const [isAdded, setIsAdded] = React.useState(added); // По умолчанию ставим false.
+  const { isItemAdded } = React.useContext(AppContext);
   const [isFavorite, setIsFavorite] = React.useState(favorited);
 
   const onClickPlus = () => {
     onPlus({ id, title, imageUrl, price }); // передали объекты при каждом нажатии на плюс.
-    setIsAdded(!isAdded); // Инверсия значения.
   };
 
   const onClickFavorite = () => {
@@ -54,7 +53,6 @@ function Card({
           <img width="100%" height={135} src={imageUrl} alt="sneakers" />
           <h5>
             {title}
-            {/* Передали свойство с props и аргумента title в <Card /> */}
           </h5>
           <div className="d-flex justify-between align-center">
             <div className="d-flex flex-column">
@@ -64,7 +62,7 @@ function Card({
             <img
               className={styles.plus}
               onClick={onClickPlus}
-              src={isAdded ? '/img/btn-checked.svg' : '/img/btn-plus.svg'}
+              src={isItemAdded(id) ? '/img/btn-checked.svg' : '/img/btn-plus.svg'}
               alt="Plus"
             />
           </div>

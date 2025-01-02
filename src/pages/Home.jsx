@@ -1,3 +1,5 @@
+
+import React from 'react';
 import Card from '../components/Card';
 function Home({
   items,
@@ -18,15 +20,12 @@ function Home({
         key={item?.id || index}
         onFavorite={(obj) => onAddFavorite(obj)}
         onPlus={(obj) => onAddToCart(obj)}
-        added={cartItems.some((obj) => Number(obj.id) === Number(item?.id))}
         loading={isLoading}
         {...item}
       />
     ));
   };
   
-
-
   return (
     <div className="content p-40">
       <div className="d-flex align-center justify-between mb-40">
@@ -36,7 +35,6 @@ function Home({
           <input onChange={onChangeSearchInput} value={searchValue} placeholder="Поиск..."></input>
         </div>
       </div>
-
       <div className="d-flex flex-wrap">{renderItems()}</div>
     </div>
   );

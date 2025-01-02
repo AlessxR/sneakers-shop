@@ -7,8 +7,9 @@ import Drawer from './components/Drawer';
 import Home from './pages/Home';
 import Favorites from './pages/Favorites';
 
-function App() {
+export const AppContext = React.createContext({});
 
+function App() {
   const [items, setItems] = React.useState([]);
   const [cartItems, setCartItems] = React.useState([]); // Корзина.
   const [favorites, setFavorites] = React.useState([]);
@@ -17,19 +18,20 @@ function App() {
   const [isLoading, setIsLoading] = React.useState(true); // Проверка на готовность
 
   React.useEffect(() => {
-
     async function fetchData() {
       const itemsResponce = await axios.get('https://67674af3560fbd14f18d663d.mockapi.io/Items');
-  
+
       const cartResponce = await axios.get('https://67674af3560fbd14f18d663d.mockapi.io/cart');
-  
-      const favoriteResponce = await axios.get('https://676ac528863eaa5ac0df93ea.mockapi.io/favorites');
+
+      const favoriteResponce = await axios.get(
+        'https://676ac528863eaa5ac0df93ea.mockapi.io/favorites',
+      );
 
       setIsLoading(false); // Загрузка всего
 
-      setCartItems(cartResponce.data); 
+      setCartItems(cartResponce.data);
       setFavorites(favoriteResponce.data);
-      setItems(itemsResponce.data); 
+      setItems(itemsResponce.data);
     }
 
     fetchData();
@@ -37,10 +39,10 @@ function App() {
 
   const onAddToCart = (obj) => {
     // Проверка наличия в корзине.
-    if (cartItems.find((cartObj) => Number(cartObj.id) === Number(obj.id))) {
+    if (cartItems.find((item) => Number(item.id) === Number(obj.id))) {
       // Если есть, увеличиваем количество.
-      axios.delete(`https://67674af3560fbd14f18d663d.mockapi.io/cart/${obj.id}`)
-      setCartItems((prev) => prev.filter((cartObj) => Number(cartObj.id) !== Number(obj.id)));
+      axios.delete(`https://67674af3560fbd14f18d663d.mockapi.io/cart/${obj.id}`);
+      setCartItems((prev) => prev.filter((item) => Number(item.id) !== Number(obj.id)));
     } else {
       // Если нет, добавляем в корзину.
       axios.post('https://67674af3560fbd14f18d663d.mockapi.io/cart', obj);
@@ -54,19 +56,25 @@ function App() {
     setCartItems((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const onAddFavorite = async (obj) => {
+  const onAddToFavorite = async (obj) => {
     try {
-      if (favorites.find((favObj) => favObj.id === obj.id)) {
+      const serializableObj = {
+        id: obj.id,
+        title: obj.title,
+        price: obj.price,
+        imageUrl: obj.imageUrl,
+      };
+
+      if (favorites.find((favObj) => Number(favObj.id) === Number(obj.id))) {
         // Удаляем из избранного
         await axios.delete(`https://676ac528863eaa5ac0df93ea.mockapi.io/favorites/${obj.id}`);
-        setFavorites((prev) => prev.filter((item) => item.id !== obj.id));
+        setFavorites((prev) => prev.filter((item) => Number(item.id) !== Number(obj.id)));
       } else {
         // Добавляем в избранное
-        const { data } = await axios.post('https://676ac528863eaa5ac0df93ea.mockapi.io/favorites', {
-          title: obj.title,
-          price: obj.price,
-          imageUrl: obj.imageUrl,
-        });
+        const { data } = await axios.post(
+          'https://676ac528863eaa5ac0df93ea.mockapi.io/favorites',
+          serializableObj,
+        );
         setFavorites((prev) => [...prev, data]);
       }
     } catch (error) {
@@ -79,39 +87,49 @@ function App() {
     setSearchValue(event.target.value);
   };
 
+  const isItemAdded = (id) => {
+    return cartItems.some((item) => Number(item.id) === Number(id));
+  };
+
   return (
-    <div className="wrapper clear">
-      {/* Отображение корзины */}
-      {/* Если открыта выполняем действие, и наоборот */}
-      {cartOpened && (
-        <Drawer items={cartItems} onClose={() => setCartOpened(false)} onRemove={onRemoveItem} />
-      )}
+    <AppContext.Provider
+      value={{
+        cartItems,
+        favorites,
+        items,
+        isItemAdded,
+        onAddToFavorite,
+        setCartOpened,
+        setCartItems,
+      }}>
+      <div className="wrapper clear">
+        {cartOpened && (
+          <Drawer items={cartItems} onClose={() => setCartOpened(false)} onRemove={onRemoveItem} />
+        )}
 
-      <Header onClickCart={() => setCartOpened(true)} />
+        <Header onClickCart={() => setCartOpened(true)} />
 
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <Home
-              items={items}
-              cartItems={cartItems}
-              searchValue={searchValue}
-              setSearchValue={setSearchValue}
-              onChangeSearchInput={onChangeSearchInput}
-              onAddFavorite={onAddFavorite}
-              onAddToCart={onAddToCart}
-              isLoading={isLoading}
-            />
-          }
-        />
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <Home
+                items={items}
+                cartItems={cartItems}
+                searchValue={searchValue}
+                setSearchValue={setSearchValue}
+                onChangeSearchInput={onChangeSearchInput}
+                onAddFavorite={onAddToFavorite}
+                onAddToCart={onAddToCart}
+                isLoading={isLoading}
+              />
+            }
+          />
 
-        <Route
-          path="/favorites"
-          element={<Favorites items={favorites} onAddFavorite={onAddFavorite} />}
-        />
-      </Routes>
-    </div>
+          <Route path="/favorites" element={<Favorites />} />
+        </Routes>
+      </div>
+    </AppContext.Provider>
   ); // Default HTML + JS
 }
 

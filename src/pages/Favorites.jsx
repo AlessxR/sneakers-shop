@@ -1,18 +1,24 @@
 import Card from "../components/Card";
-function Favorites( {items, onAddFavorite} ) {
+import React from "react";
+
+import {AppContext} from "../App";
+function Favorites() {
+
+  const { favorites, onAddToFavorite } = React.useContext(AppContext);
+
   return (
     <div className="content p-40">
       <div className="d-flex align-center justify-between mb-40">
         <h1>Мои закладки</h1>
       </div>
       <div className="d-flex flex-wrap">
-        {Array.isArray(items) &&
-          items
+        {Array.isArray(favorites) &&
+          favorites
             .map((item) => (
               <Card
-                key={item.title}
+                key={item.id}
                 favorited={true}
-                onFavorite={onAddFavorite}
+                onFavorite={onAddToFavorite}
                 {...item} // Взяли объекты с бек.
               />
             ))}

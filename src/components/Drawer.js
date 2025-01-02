@@ -1,5 +1,37 @@
+import React from 'react';
+import axios from 'axios';
+import { AppContext } from '../App';
+import Info from './Info';
 
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 function Drawer({ onClose, onRemove, items = [] }) {
+
+  const { cartItems, setCartItems} = React.useContext(AppContext);
+  const [isOrderComplete, setIsOrderComplete] = React.useState(false);
+  const [orderId, setOrderId] = React.useState(null);
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const onClickOrder = async () => {
+    try{
+      setIsLoading(true);
+      const {data} = await axios.post('https://676ac528863eaa5ac0df93ea.mockapi.io/orders', {
+        items: cartItems,
+      });
+      setOrderId(data.id);
+      setIsOrderComplete(true);
+      setCartItems([]);
+      for (let i = 0; i < cartItems.length; i++) { // MockAPI =)
+        const item = cartItems[i];
+        await axios.delete("https://67674af3560fbd14f18d663d.mockapi.io/cart/" + item.id);
+        await delay(1000);
+
+      }
+    } catch(err){
+      alert("Не удалось создать заказ :(")
+    }
+    setIsLoading(false);
+  }
+
   return (
     <div className="overlay">
       <div className="drawer">
@@ -14,13 +46,11 @@ function Drawer({ onClose, onRemove, items = [] }) {
             alt="remove"
           />
         </h2>
-
         {/* Рендеринг если карточка пустая и не пустая. */}
         {items.length > 0 ? (
-          <div>
+          <div className="d-flex flex-column flex">
             <div className="items">
-              {
-                items.map((obj) => (
+              {items.map((obj) => (
                 <div key={obj.id} className="cartItem d-flex align-center mb-20">
                   <div
                     style={{ backgroundImage: `url(${obj.imageUrl})` }}
@@ -51,54 +81,19 @@ function Drawer({ onClose, onRemove, items = [] }) {
                   <b>1000 Евро.</b>
                 </li>
               </ul>
-              <button className="greenButton">
+              <button disabled={isLoading} onClick={onClickOrder} className="greenButton">
                 Оформить заказ<img src="img/arrow.svg" alt="arrow"></img>
               </button>
             </div>
           </div>
         ) : (
-          <div className="cartEmpty d-flex align-center justify-center flex-column flex">
-            <img
-              className="mb-20"
-              width={120}
-              height={120}
-              src="/img/empty-cart.jpg"
-              alt="Empty cart"
-            />
-            <h2>Корзина пустая</h2>
-            <p className="opacity-6">Добавьте хотя бы одну пару кроссовок, чтобы сделать заказ.</p>
-            <button onClick={onClose} className="greenButton">
-              <img src="/img/arrow.svg" alt="Arrow" />
-              Вернуться назад
-            </button>
-          </div>
+          <Info
+            title={isOrderComplete ? "Заказ оформлен!" : "Корзина пустая."}
+            description={isOrderComplete ? `Ваш заказ #${orderId} скоро будет передан курьерской доставке` : "Добавьте хотя бы одну пару кроссовок, чтобы сделать заказ."}
+            image={isOrderComplete ? "/img/comple-order.svg" : "/img/empty-cart.jpg"} 
+          />
         )}
-
-        {/* <div className="cartItem d-flex align-center mb-20">
-            <img className="mr-20" width={70} height={70} src="/img/sneakers/sneakers-1.jpeg" alt="Sneakers-1" />
-
-            <div
-              style={{ backgroundImg: 'url(/img/sneakers/sneakers-1.jpeg)' }}
-              className="cardItemImg"></div>
-            <div className="mr-20 flex">
-              <p className="mb-5">Мужские кроссовки Nike Air Max 270</p>
-              <b>12 000 Euro</b>
-            </div>
-            <img className="removeBtn" src="/img/btn-remove.png" alt="remove" />
-          </div>
-
-          <div className="cartItem d-flex align-center">
-            <img className="mr-20" width={70} height={70} src="/img/sneakers/sneakers-1.jpeg" alt="Sneakers-2"/>
-
-            <div
-              style={{ backgroundImg: 'url(/img/sneakers/sneakers-1.jpeg)' }}
-              className="cardItemImg"></div>
-            <div className="mr-20 flex">
-              <p className="mb-5">Мужские кроссовки Nike Air Max 270</p>
-              <b>12 000 Euro</b>
-            </div>
-            <img className="removeBtn" src="/img/btn-remove.png" alt="remove" />
-          </div> */}
+        ;
       </div>
     </div>
   );
