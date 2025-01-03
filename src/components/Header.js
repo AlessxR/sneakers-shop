@@ -1,6 +1,10 @@
+import React from 'react'
 import { Link } from 'react-router-dom';
+import {useCart} from '../hooks/useCart';
 
 function Header(props) {
+  const { totalPrice } = useCart();
+
   return (
     <header className="d-flex justify-between	align-center">
       <Link to="/">
@@ -16,13 +20,16 @@ function Header(props) {
       <ul className="d-flex">
         <li onClick={props.onClickCart} className="mr-30 cu-p">
           <img src="/img/cart.svg" alt="cart"></img>
-          <span>1205 грн.</span>
+          <span>{totalPrice} грн.</span>
         </li>
+        <li>
           <Link to="/favorites">
             <img src="/img/favorite.svg" alt="favorite" />
           </Link>
+        </li>
+      
         <li>
-          <Link to="/cart">
+          <Link to="/orders">
             <img src="/img/profile.svg" alt="user-cart" />
           </Link>
         </li>
