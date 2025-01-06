@@ -7,7 +7,6 @@ function Home({
   onChangeSearchInput,
   onAddFavorite,
   onAddToCart,
-  cartItems,
   isLoading,
 }) {
   const renderItems = () => {

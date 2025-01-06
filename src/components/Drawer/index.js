@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import axios from 'axios';
 import Info from '../Info';
 import { useCart } from '../../hooks/useCart';
@@ -11,6 +11,30 @@ function Drawer({ onClose, onRemove, items = [], opened }) {
   const [isOrderComplete, setIsOrderComplete] = React.useState(false);
   const [orderId, setOrderId] = React.useState(null);
   const [isLoading, setIsLoading] = React.useState(false);
+
+  // Убирание scroll.
+  useEffect(() => {
+    if (opened) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    // Удаление hidden
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [opened]);
+
+  const groupedItems = items.reduce((acc, item) => {
+    const existingItem = acc.find((i) => i.id === item.id);
+    if (existingItem) {
+      existingItem.count += 1; // Увеличиваем количество
+    } else {
+      acc.push({ ...item, count: 1 }); // Добавляем новый товар с count = 1
+    }
+    return acc;
+  }, []);
 
   const onClickOrder = async () => {
     try{
@@ -34,12 +58,12 @@ function Drawer({ onClose, onRemove, items = [], opened }) {
   }
 
   return (
-    <div className={`${styles.overlay} ${opened ? styles.overlayVisible :'' }`}>
-      <div className={styles.drawer}>
+    <div className={`${styles.overlay} ${opened ? styles.overlayVisible :'' }`} onClick={onClose}>
+      <div className={styles.drawer} onClick={(e) => e.stopPropagation()}>
         <h2 className="d-flex justify-between mb-30">
           Корзина{' '}
           <img
-            onClick={onClose}
+            onClick={onClose} // Закрытие корзины при нажатии.
             className="cu-p"
             width={14}
             height={14}
@@ -51,14 +75,15 @@ function Drawer({ onClose, onRemove, items = [], opened }) {
         {items.length > 0 ? (
           <div className="d-flex flex-column flex">
             <div className="items flex">
-              {items.map((obj) => (
+              {groupedItems.map((obj) => (
                 <div key={obj.id} className="cartItem d-flex align-center mb-20">
                   <div
                     style={{ backgroundImage: `url(${obj.imageUrl})` }}
                     className="cartItemImg"></div>
                   <div className="mr-20 flex">
                     <p className="mb-5">{obj.title}</p>
-                    <b>{obj.price} грн.</b>
+                    <b>{obj.price} грн. </b>
+                    <span>Кол-во: {obj.count} </span>
                   </div>
                   <img
                     onClick={() => onRemove(obj.id)}
@@ -94,7 +119,6 @@ function Drawer({ onClose, onRemove, items = [], opened }) {
             image={isOrderComplete ? "img/comple-order.svg" : "img/empty-cart.jpg"} 
           />
         )}
-        ;
       </div>
     </div>
   );
